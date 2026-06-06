@@ -1702,7 +1702,7 @@ function handleFile(e) {
 
 function processFile(file) {
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
       const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -1713,7 +1713,7 @@ function processFile(file) {
       if (allOrders.length > 0) {
         showAppendModal(raw);
       } else {
-        parseRawExcelData(raw, 'replace');
+        await parseRawExcelData(raw, 'replace');
         showToast(`✅ ${allOrders.length} pedidos cargados`);
       }
     } catch(err) {
@@ -1724,7 +1724,10 @@ function processFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
-function parseRawExcelData(raw, mode = 'replace') {
+async function parseRawExcelData(raw, mode = 'replace') {
+  if (mode === 'replace') {
+    await fetchOrdersFromDB();
+  }
   const rawHeaders = raw[0].map(h => String(h || ''));
   const rows = raw.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
 
@@ -1821,17 +1824,33 @@ function parseRawExcelData(raw, mode = 'replace') {
     };
   });
 
+  let mergedOrders = newOrders;
+  if (mode === 'replace' && allOrders.length > 0) {
+    const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    mergedOrders = newOrders.map(o => {
+      const match = allOrders.find(ext => {
+        const matchName = norm(ext.nombreComprador) === norm(o.nombreComprador);
+        const matchPhone = norm(ext.celularComprador) === norm(o.celularComprador);
+        const matchAddress = norm(ext.calle) === norm(o.calle) && norm(ext.numeroCalle) === norm(o.numeroCalle);
+        if (matchName && matchPhone && matchAddress) return true;
+        if (ext.fecha && o.fecha && String(ext.fecha) === String(o.fecha)) return true;
+        return false;
+      });
+      return match ? { ...o, ...match } : o;
+    });
+  }
+
   if (mode === 'append') {
     const startNum = allOrders.length > 0 ? Math.max(...allOrders.map(o => o._num)) : 0;
-    newOrders.forEach((o, i) => {
+    mergedOrders.forEach((o, i) => {
       o._num = startNum + i + 1;
     });
-    allOrders = [...allOrders, ...newOrders];
+    allOrders = [...allOrders, ...mergedOrders];
   } else {
-    newOrders.forEach((o, i) => {
+    mergedOrders.forEach((o, i) => {
       o._num = i + 1;
     });
-    allOrders = newOrders;
+    allOrders = mergedOrders;
   }
 
   filteredOrders = [...allOrders];
@@ -2200,9 +2219,9 @@ function closeAppendModal() {
   setTimeout(() => { modal.style.display = 'none'; pendingRawData = null; }, 300);
 }
 
-function executeAppendAction(mode) {
+async function executeAppendAction(mode) {
   if (pendingRawData) {
-    parseRawExcelData(pendingRawData, mode);
+    await parseRawExcelData(pendingRawData, mode);
     showToast(mode === 'append' ? `✅ Pedidos agregados con éxito` : `✅ Lista de pedidos reemplazada`);
   }
   closeAppendModal();
@@ -3013,7 +3032,7 @@ async function fetchAndProcessGoogleSheets(urlOrId) {
       return;
     }
 
-    parseRawExcelData(raw);
+    await parseRawExcelData(raw);
 
     // Guardar en localStorage
     localStorage.setItem('ricuritas_sheet_url', urlOrId);
