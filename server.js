@@ -89,12 +89,13 @@ app.post('/api/auth/login', (req, res) => {
 
 // Subida de archivos (Fotos y Comprobantes)
 app.post('/api/upload', upload.fields([
-  { name: 'foto', maxCount: 1 },
+  { name: 'foto', maxCount: 10 },
   { name: 'comprobante', maxCount: 1 }
 ]), (req, res) => {
   const response = {};
   if (req.files && req.files['foto']) {
-    response.foto = '/uploads/' + req.files['foto'][0].filename;
+    const paths = req.files['foto'].map(file => '/uploads/' + file.filename);
+    response.foto = paths.join(', ');
   }
   if (req.files && req.files['comprobante']) {
     response.comprobante = '/uploads/' + req.files['comprobante'][0].filename;

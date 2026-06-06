@@ -1271,7 +1271,7 @@
 
           <div class="form-group" style="margin-top:12px;">
             <label for="clientFotosFile">Fotos para la cajita</label>
-            <input type="file" id="clientFotosFile" accept="image/*">
+            <input type="file" id="clientFotosFile" accept="image/*" multiple>
             <p style="font-size: 0.72rem; color: var(--text-light); margin-top:2px;">Subí una foto para personalizar tu cajita de regalo</p>
           </div>
 
@@ -1522,7 +1522,7 @@
               <input type="text" id="editFotos" placeholder="URL de Google Drive o base64" oninput="updateFieldPreview('editFotos', this.value)">
               <button type="button" class="upload-btn-icon" onclick="triggerLocalUpload('editFotos')" title="Subir archivo local">📁</button>
             </div>
-            <input type="file" id="file_editFotos" accept="image/*" style="display:none;" onchange="handleLocalImageUpload(this, 'editFotos')">
+            <input type="file" id="file_editFotos" accept="image/*" style="display:none;" onchange="handleLocalImageUpload(this, 'editFotos')" multiple>
             <div id="preview_editFotos" class="image-field-preview"></div>
           </div>
         </div>
@@ -1979,14 +1979,18 @@ async function submitClientOrder(event) {
   submitBtn.textContent = 'Enviando pedido... 🧁';
   
   try {
-    const fotoFile = document.getElementById('clientFotosFile').files[0];
+    const fotoFiles = document.getElementById('clientFotosFile').files;
     const comprobanteFile = document.getElementById('clientComprobanteFile').files[0];
     
     let uploadedPaths = { foto: '', comprobante: '' };
     
-    if (fotoFile || comprobanteFile) {
+    if (fotoFiles.length > 0 || comprobanteFile) {
       const formData = new FormData();
-      if (fotoFile) formData.append('foto', fotoFile);
+      if (fotoFiles.length > 0) {
+        for (let i = 0; i < fotoFiles.length; i++) {
+          formData.append('foto', fotoFiles[i]);
+        }
+      }
       if (comprobanteFile) formData.append('comprobante', comprobanteFile);
       
       const uploadRes = await fetch('/api/upload', {
@@ -2129,17 +2133,27 @@ function triggerLocalUpload(fieldId) {
 }
 
 function handleLocalImageUpload(input, fieldId) {
-  const file = input.files[0];
-  if (!file) return;
+  const files = input.files;
+  if (!files || files.length === 0) return;
   
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const base64 = e.target.result;
-    document.getElementById(fieldId).value = base64;
-    updateFieldPreview(fieldId, base64);
-    input.value = ''; // Limpiar el input de tipo file
-  };
-  reader.readAsDataURL(file);
+  let loadedCount = 0;
+  const newBase64s = [];
+  
+  for (let i = 0; i < files.length; i++) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      newBase64s.push(reader.result);
+      loadedCount++;
+      if (loadedCount === files.length) {
+        const currentVal = document.getElementById(fieldId).value;
+        const newVal = currentVal ? currentVal + ', ' + newBase64s.join(', ') : newBase64s.join(', ');
+        document.getElementById(fieldId).value = newVal;
+        updateFieldPreview(fieldId, newVal);
+        input.value = ''; // Limpiar el input de tipo file
+      }
+    };
+    reader.readAsDataURL(files[i]);
+  }
 }
 
 function updateFieldPreview(fieldId, value) {
@@ -2147,12 +2161,28 @@ function updateFieldPreview(fieldId, value) {
   if (!preview) return;
   
   if (value) {
-    const src = getGoogleDriveDirectLink(value);
-    preview.innerHTML = `
-      <img src="${src}" alt="Vista previa" onerror="handlePreviewError(this)">
-      <button type="button" class="remove-img-btn" onclick="clearFieldImage('${fieldId}')">&times;</button>
-    `;
-    preview.style.display = 'block';
+    const urls = value.split(',').map(u => u.trim()).filter(Boolean);
+    preview.innerHTML = '';
+    preview.style.display = 'flex';
+    preview.style.flexWrap = 'wrap';
+    preview.style.gap = '8px';
+    
+    urls.forEach((url, index) => {
+      const src = getGoogleDriveDirectLink(url);
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'relative';
+      wrapper.style.width = '80px';
+      wrapper.style.height = '80px';
+      wrapper.innerHTML = `
+        <img src="${src}" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div style="display: none; width: 100%; height: 100%; background: var(--blush); border-radius: 8px; font-size: 0.65rem; color: var(--rose-dark); flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 1px solid var(--rose-light);">
+          <span>Sin vista</span>
+          <a href="${url}" target="_blank" style="font-size:0.6rem; color: var(--chocolate); font-weight:bold;">Link ↗</a>
+        </div>
+        <button type="button" class="remove-img-btn" onclick="removeSingleImage('${fieldId}', ${index})" style="position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--rose-dark); color: white; border: none; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; z-index: 10;">&times;</button>
+      `;
+      preview.appendChild(wrapper);
+    });
   } else {
     preview.innerHTML = '';
     preview.style.display = 'none';
@@ -2177,6 +2207,16 @@ function handlePreviewError(img) {
 function clearFieldImage(fieldId) {
   document.getElementById(fieldId).value = '';
   updateFieldPreview(fieldId, '');
+}
+
+function removeSingleImage(fieldId, index) {
+  const input = document.getElementById(fieldId);
+  if (!input) return;
+  const urls = input.value.split(',').map(u => u.trim()).filter(Boolean);
+  urls.splice(index, 1);
+  const newVal = urls.join(', ');
+  input.value = newVal;
+  updateFieldPreview(fieldId, newVal);
 }
 
 // Descarga Unificada de Fotos
@@ -2347,11 +2387,19 @@ function renderOrders() {
       ${dir ? `<div class="card-field"><span class="field-label">🛣️ Dirección</span><span class="field-value">${dir}</span></div>` : ''}
       ${bebida ? `<div class="card-field"><span class="field-label">${getBebidaIcon(bebida)} Bebida</span><span class="field-value">${bebida}</span></div>` : ''}
       ${mensaje ? `<div class="card-field"><span class="field-label">💌 Mensaje</span><span class="field-value" style="font-style:italic;">"${mensaje}"</span></div>` : ''}
-      ${foto ? `<div class="card-field card-image-field">
-        <span class="field-label">🖼️ Foto</span>
-        <div class="card-image-wrapper">
-          <img src="${getGoogleDriveDirectLink(foto)}" alt="Foto del pedido" class="card-image-thumbnail" onerror="handleImageError(this, '${foto}')" onclick="openLightbox(this.src, 'Pedido N° ${o._num} - Foto')">
-          <button class="download-img-btn" onclick="downloadImage(getGoogleDriveDirectLink('${foto}'), 'pedido_${o._num}_foto')">📥 Descargar</button>
+      ${foto ? `<div class="card-field card-image-field" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <span class="field-label">🖼️ Foto(s)</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          ${foto.split(',').map((f, fIdx) => {
+            const url = f.trim();
+            if (!url) return '';
+            const directUrl = getGoogleDriveDirectLink(url);
+            return `
+            <div class="card-image-wrapper" style="width: calc(50% - 4px); min-width: 100px; margin-bottom: 4px;">
+              <img src="${directUrl}" alt="Foto del pedido" class="card-image-thumbnail" onerror="handleImageError(this, '${url}')" onclick="openLightbox(this.src, 'Pedido N° ${o._num} - Foto ${fIdx + 1}')">
+              <button class="download-img-btn" onclick="downloadImage('${directUrl}', 'pedido_${o._num}_foto_${fIdx + 1}')">📥 Descargar</button>
+            </div>`;
+          }).join('')}
         </div>
       </div>` : ''}
       <div class="card-divider"></div>
@@ -3106,6 +3154,36 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+// Polling de pedidos nuevos cada 20 segundos si el panel de admin está activo
+setInterval(() => {
+  const token = localStorage.getItem('ricuritas_admin_token');
+  const adminLayout = document.getElementById('adminLayout');
+  const isAdminActive = adminLayout && !adminLayout.classList.contains('hidden');
+  if (token && isAdminActive) {
+    const currentCount = allOrders.length;
+    fetch('/api/orders', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(res => {
+      if (res.ok) return res.json();
+    })
+    .then(data => {
+      if (data && data.length > currentCount) {
+        const newCount = data.length - currentCount;
+        allOrders = data;
+        filterOrders();
+        renderStats();
+        mapInitialized = false;
+        if (currentTab === 'map') {
+          initMap();
+        }
+        showToast(`🔔 ¡Se recibieron ${newCount} nuevo(s) pedido(s)!`);
+      }
+    })
+    .catch(err => console.error('Error en auto-polling:', err));
+  }
+}, 20000);
 </script>
 </body>
 </html>
