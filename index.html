@@ -892,6 +892,193 @@
     transform: translateY(-1px);
     box-shadow: 0 6px 15px var(--shadow);
   }
+
+  /* ---- NUEVOS ESTILOS PARA IMÁGENES Y SUBIDA ---- */
+  .input-with-upload {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .input-with-upload input {
+    flex: 1;
+  }
+  .upload-btn-icon {
+    background: var(--blush);
+    border: 2px solid var(--rose-light);
+    color: var(--chocolate);
+    border-radius: 12px;
+    cursor: pointer;
+    padding: 8px 12px;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .upload-btn-icon:hover {
+    background: var(--rose-light);
+    transform: scale(1.05);
+  }
+  .image-field-preview {
+    margin-top: 8px;
+    max-width: 100%;
+    height: 100px;
+    border-radius: 12px;
+    overflow: hidden;
+    display: none;
+    border: 2px solid var(--rose-light);
+    position: relative;
+  }
+  .image-field-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .image-field-preview .remove-img-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(107, 61, 46, 0.85);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .image-field-preview .remove-img-btn:hover {
+    background: var(--chocolate);
+  }
+
+  /* Miniaturas en Tarjetas */
+  .card-image-field {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .card-image-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+  .card-image-thumbnail {
+    width: 100%;
+    max-height: 160px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 2px solid var(--blush);
+    cursor: zoom-in;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 6px var(--shadow);
+  }
+  .card-image-thumbnail:hover {
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px var(--shadow);
+  }
+  .download-img-btn {
+    align-self: flex-start;
+    background: var(--blush);
+    border: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--chocolate);
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    user-select: none;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .download-img-btn:hover {
+    background: var(--peach);
+    transform: translateY(-1px);
+  }
+  .fallback-link {
+    color: var(--rose-dark);
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 0.85rem;
+  }
+  .fallback-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Modal Lightbox */
+  .lightbox-backdrop {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(61, 43, 31, 0.9);
+    backdrop-filter: blur(10px);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 20px;
+  }
+  .lightbox-backdrop.show {
+    display: flex;
+    opacity: 1;
+  }
+  .lightbox-content {
+    max-width: 90%;
+    max-height: 85%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .lightbox-content img {
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    border: 3px solid var(--rose-light);
+    object-fit: contain;
+    background: rgba(0,0,0,0.2);
+  }
+  .lightbox-caption {
+    color: var(--cream);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    margin-top: 14px;
+    font-weight: 700;
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+  .lightbox-actions {
+    margin-top: 12px;
+  }
+  .close-lightbox {
+    position: fixed;
+    top: 20px; right: 20px;
+    color: var(--cream);
+    font-size: 3rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+    user-select: none;
+    line-height: 1;
+    z-index: 3010;
+  }
+  .close-lightbox:hover {
+    color: var(--rose);
+    transform: scale(1.1);
+  }
 </style>
 </head>
 <body>
@@ -1084,7 +1271,12 @@
           </div>
           <div class="form-group">
             <label for="editFotos">URL Foto Personalizada</label>
-            <input type="text" id="editFotos">
+            <div class="input-with-upload">
+              <input type="text" id="editFotos" placeholder="URL de Google Drive o base64">
+              <button type="button" class="upload-btn-icon" onclick="triggerLocalUpload('editFotos')" title="Subir archivo local">📁</button>
+            </div>
+            <input type="file" id="file_editFotos" accept="image/*" style="display:none;" onchange="handleLocalImageUpload(this, 'editFotos')">
+            <div id="preview_editFotos" class="image-field-preview"></div>
           </div>
         </div>
         <div class="form-group">
@@ -1104,7 +1296,12 @@
           </div>
           <div class="form-group">
             <label for="editComprobante">URL Comprobante</label>
-            <input type="text" id="editComprobante">
+            <div class="input-with-upload">
+              <input type="text" id="editComprobante" placeholder="URL de Google Drive o base64">
+              <button type="button" class="upload-btn-icon" onclick="triggerLocalUpload('editComprobante')" title="Subir archivo local">📁</button>
+            </div>
+            <input type="file" id="file_editComprobante" accept="image/*" style="display:none;" onchange="handleLocalImageUpload(this, 'editComprobante')">
+            <div id="preview_editComprobante" class="image-field-preview"></div>
           </div>
         </div>
         <div class="form-grid-2" style="margin-top: 8px;">
@@ -1123,6 +1320,31 @@
           <button type="submit" class="btn-primary">Guardar Cambios</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX MODAL -->
+<div class="lightbox-backdrop" id="lightboxModal" onclick="if(event.target === this || event.target.classList.contains('close-lightbox')) closeLightbox()">
+  <span class="close-lightbox">&times;</span>
+  <div class="lightbox-content">
+    <img id="lightboxImg" src="" alt="Ampliada">
+    <div class="lightbox-caption" id="lightboxCaption"></div>
+    <div class="lightbox-actions">
+      <button class="btn-primary" id="lightboxDownloadBtn">📥 Descargar Foto</button>
+    </div>
+  </div>
+</div>
+
+<!-- APPEND MODAL -->
+<div class="modal-backdrop" id="appendModal" onclick="if(event.target === this) closeAppendModal()">
+  <div class="modal-card" style="max-width: 450px; text-align: center; padding: 24px; border-radius: 24px;">
+    <div style="font-size: 3rem; margin-bottom: 12px; margin-top: 10px;">📂</div>
+    <h3 style="font-family: 'Playfair Display', serif; color: var(--chocolate); margin-bottom: 10px; font-size: 1.35rem;">Cargar pedidos adicionales</h3>
+    <p style="color: var(--text-light); margin-bottom: 24px; line-height: 1.5; font-size: 0.92rem; padding: 0 10px;">Se han detectado pedidos cargados en la aplicación. ¿Deseas agregar los nuevos pedidos a la lista existente o reemplazar la lista actual por completo?</p>
+    <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 10px;">
+      <button class="btn-secondary" onclick="executeAppendAction('replace')" style="flex: 1; padding: 10px; border-radius: 20px;">Reemplazar lista</button>
+      <button class="btn-primary" onclick="executeAppendAction('append')" style="flex: 1; padding: 10px; border-radius: 20px; box-shadow: none;">Agregar pedidos</button>
     </div>
   </div>
 </div>
@@ -1241,8 +1463,12 @@ function processFile(file) {
 
       if (raw.length < 2) { showToast('❌ El archivo no tiene datos'); return; }
 
-      parseRawExcelData(raw);
-      showToast(`✅ ${allOrders.length} pedidos cargados`);
+      if (allOrders.length > 0) {
+        showAppendModal(raw);
+      } else {
+        parseRawExcelData(raw, 'replace');
+        showToast(`✅ ${allOrders.length} pedidos cargados`);
+      }
     } catch(err) {
       showToast('❌ Error al leer el archivo');
       console.error(err);
@@ -1251,7 +1477,7 @@ function processFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
-function parseRawExcelData(raw) {
+function parseRawExcelData(raw, mode = 'replace') {
   const rawHeaders = raw[0].map(h => String(h || ''));
   const rows = raw.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
 
@@ -1326,9 +1552,9 @@ function parseRawExcelData(raw) {
     }
   });
 
-  allOrders = rows.map((row, i) => {
+  const newOrders = rows.map((row, i) => {
     return {
-      _num: i + 1,
+      _num: 0,
       fecha: fechaIdx !== -1 ? (row[fechaIdx] ?? '') : '',
       nombreComprador: toTitleCase(buyerNameIdx !== -1 ? (row[buyerNameIdx] ?? '') : ''),
       celularComprador: buyerPhoneIdx !== -1 ? (row[buyerPhoneIdx] ?? '') : '',
@@ -1348,6 +1574,19 @@ function parseRawExcelData(raw) {
     };
   });
 
+  if (mode === 'append') {
+    const startNum = allOrders.length > 0 ? Math.max(...allOrders.map(o => o._num)) : 0;
+    newOrders.forEach((o, i) => {
+      o._num = startNum + i + 1;
+    });
+    allOrders = [...allOrders, ...newOrders];
+  } else {
+    newOrders.forEach((o, i) => {
+      o._num = i + 1;
+    });
+    allOrders = newOrders;
+  }
+
   filteredOrders = [...allOrders];
   populateBebidaFilter();
   renderOrders();
@@ -1358,6 +1597,142 @@ function parseRawExcelData(raw) {
 
   document.getElementById('uploadZone').style.display = 'none';
   document.getElementById('ordersPage').classList.remove('hidden');
+}
+
+// ---- NUEVOS HELPERS PARA IMÁGENES, DESCARGAS Y CARGA ADICIONAL ----
+
+function getGoogleDriveDirectLink(url) {
+  if (!url) return '';
+  if (url.startsWith('data:')) return url; // Base64
+  
+  // Extrae el ID del archivo de Google Drive
+  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/id=([a-zA-Z0-9-_]+)/);
+  if (match && match[1]) {
+    // Retorna link directo usando el proxy lh3.googleusercontent.com
+    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  return url;
+}
+
+function handleImageError(img, originalUrl) {
+  // Ocultamos la miniatura si no se pudo cargar y mostramos un link clásico
+  const wrapper = img.closest('.card-image-wrapper');
+  if (wrapper) {
+    wrapper.innerHTML = `<a href="${originalUrl}" target="_blank" class="fallback-link">Ver enlace ↗</a>`;
+  }
+}
+
+// Funciones de Lightbox
+function openLightbox(src, caption) {
+  const lightbox = document.getElementById('lightboxModal');
+  const img = document.getElementById('lightboxImg');
+  const cap = document.getElementById('lightboxCaption');
+  const dwnBtn = document.getElementById('lightboxDownloadBtn');
+  
+  img.src = src;
+  cap.innerText = caption;
+  
+  // Asignar descarga
+  dwnBtn.onclick = function() {
+    downloadImage(src, caption.replace(/\s+/g, '_').toLowerCase());
+  };
+  
+  lightbox.style.display = 'flex';
+  setTimeout(() => lightbox.classList.add('show'), 10);
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById('lightboxModal');
+  lightbox.classList.remove('show');
+  setTimeout(() => { lightbox.style.display = 'none'; }, 300);
+}
+
+// Carga e Importación de Imagen Local en Modal de Edición
+function triggerLocalUpload(fieldId) {
+  document.getElementById('file_' + fieldId).click();
+}
+
+function handleLocalImageUpload(input, fieldId) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64 = e.target.result;
+    document.getElementById(fieldId).value = base64;
+    updateFieldPreview(fieldId, base64);
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateFieldPreview(fieldId, value) {
+  const preview = document.getElementById('preview_' + fieldId);
+  if (!preview) return;
+  
+  if (value) {
+    const src = getGoogleDriveDirectLink(value);
+    preview.innerHTML = `
+      <img src="${src}" alt="Vista previa">
+      <button type="button" class="remove-img-btn" onclick="clearFieldImage('${fieldId}')">&times;</button>
+    `;
+    preview.style.display = 'block';
+  } else {
+    preview.innerHTML = '';
+    preview.style.display = 'none';
+  }
+}
+
+function clearFieldImage(fieldId) {
+  document.getElementById(fieldId).value = '';
+  updateFieldPreview(fieldId, '');
+}
+
+// Descarga Unificada de Fotos
+function downloadImage(src, filename) {
+  if (!src) return;
+  if (src.startsWith('data:')) {
+    // Descarga directa para Base64
+    const a = document.createElement('a');
+    a.href = src;
+    a.download = `${filename}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } else {
+    // Si es un link de Google Drive, redireccionamos a export=download para forzar la descarga nativa
+    const match = src.match(/\/d\/([a-zA-Z0-9-_]+)/) || src.match(/id=([a-zA-Z0-9-_]+)/) || src.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+      const downloadUrl = `https://docs.google.com/uc?export=download&id=${match[1]}`;
+      window.open(downloadUrl, '_blank');
+    } else {
+      // Si no es un link de Drive mapeable, simplemente abrimos en una nueva pestaña
+      window.open(src, '_blank');
+    }
+  }
+}
+
+// Modal de confirmación para anexar planillas
+let pendingRawData = null;
+
+function showAppendModal(raw) {
+  pendingRawData = raw;
+  const modal = document.getElementById('appendModal');
+  modal.style.display = 'flex';
+  setTimeout(() => modal.classList.add('show'), 10);
+}
+
+function closeAppendModal() {
+  const modal = document.getElementById('appendModal');
+  modal.classList.remove('show');
+  setTimeout(() => { modal.style.display = 'none'; pendingRawData = null; }, 300);
+}
+
+function executeAppendAction(mode) {
+  if (pendingRawData) {
+    parseRawExcelData(pendingRawData, mode);
+    showToast(mode === 'append' ? `✅ Pedidos agregados con éxito` : `✅ Lista de pedidos reemplazada`);
+  }
+  closeAppendModal();
 }
 
 // ---- HELPERS ----
@@ -1480,10 +1855,22 @@ function renderOrders() {
       ${dir ? `<div class="card-field"><span class="field-label">🛣️ Dirección</span><span class="field-value">${dir}</span></div>` : ''}
       ${bebida ? `<div class="card-field"><span class="field-label">${getBebidaIcon(bebida)} Bebida</span><span class="field-value">${bebida}</span></div>` : ''}
       ${mensaje ? `<div class="card-field"><span class="field-label">💌 Mensaje</span><span class="field-value" style="font-style:italic;">"${mensaje}"</span></div>` : ''}
-      ${foto ? `<div class="card-field"><span class="field-label">🖼️ Foto</span><span class="field-value"><a href="${foto}" target="_blank">Ver foto ↗</a></span></div>` : ''}
+      ${foto ? `<div class="card-field card-image-field">
+        <span class="field-label">🖼️ Foto</span>
+        <div class="card-image-wrapper">
+          <img src="${getGoogleDriveDirectLink(foto)}" alt="Foto del pedido" class="card-image-thumbnail" onerror="handleImageError(this, '${foto}')" onclick="openLightbox(this.src, 'Pedido N° ${o._num} - Foto')">
+          <button class="download-img-btn" onclick="downloadImage(getGoogleDriveDirectLink('${foto}'), 'pedido_${o._num}_foto')">📥 Descargar</button>
+        </div>
+      </div>` : ''}
       <div class="card-divider"></div>
       ${pago ? `<div class="card-field"><span class="field-label">💳 Pago</span><span class="field-value"><span class="pago-badge ${getPagoClass(pago)}">${pago}</span></span></div>` : ''}
-      ${comprobante ? `<div class="card-field"><span class="field-label">📄 Comprobante</span><span class="field-value"><a href="${comprobante}" target="_blank">Ver ↗</a></span></div>` : ''}
+      ${comprobante ? `<div class="card-field card-image-field">
+        <span class="field-label">📄 Comprobante</span>
+        <div class="card-image-wrapper">
+          <img src="${getGoogleDriveDirectLink(comprobante)}" alt="Comprobante de pago" class="card-image-thumbnail" onerror="handleImageError(this, '${comprobante}')" onclick="openLightbox(this.src, 'Pedido N° ${o._num} - Comprobante')">
+          <button class="download-img-btn" onclick="downloadImage(getGoogleDriveDirectLink('${comprobante}'), 'pedido_${o._num}_comprobante')">📥 Descargar</button>
+        </div>
+      </div>` : ''}
       <div class="seña-info">
         ${getSeñaTagHTML(seña)}
         ${getPagoTagHTML(pagoComp, seña)}
@@ -1907,9 +2294,11 @@ function openEditModal(index) {
   document.getElementById('editBarrio').value = o.barrio || '';
   document.getElementById('editBebida').value = o.bebida || '';
   document.getElementById('editFotos').value = o.fotos || '';
+  updateFieldPreview('editFotos', o.fotos || '');
   document.getElementById('editMensaje').value = o.mensaje || '';
   document.getElementById('editPago').value = o.pago || 'Transferencia';
   document.getElementById('editComprobante').value = o.comprobante || '';
+  updateFieldPreview('editComprobante', o.comprobante || '');
   document.getElementById('editSeña').value = o.seña || '';
   document.getElementById('editPagoCompleto').value = o.pagoCompleto || '';
   
