@@ -18,3 +18,7 @@ yarn-error.log*
 dist/
 build/
 *.log
+
+# Base de datos y archivos locales subidos
+data/
+uploads/
