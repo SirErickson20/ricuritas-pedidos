@@ -14,11 +14,13 @@ yarn-error.log*
 *.sw?
 .DS_Store
 
-# Archivos de compilación y temporales
-dist/
+# Archivos de compilación temporales
 build/
 *.log
 
-# Base de datos y archivos locales subidos
-data/
-uploads/
+# Fotos subidas por usuarios (solo ignorar el contenido, no la carpeta)
+uploads/*
+!uploads/.gitkeep
+
+# Backups de base de datos
+data/backups/
