@@ -57,7 +57,19 @@ function readOrders() {
 
 function writeOrders(orders) {
   try {
-    fs.writeFileSync(dbPath, JSON.stringify(orders, null, 2));
+    // Backup automático antes de escribir (guarda los últimos 5)
+    const backupDir = path.join(dataDir, 'backups');
+    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir);
+    if (fs.existsSync(dbPath)) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      fs.copyFileSync(dbPath, path.join(backupDir, `orders_${timestamp}.json`));
+      // Mantener solo los últimos 5 backups
+      const backups = fs.readdirSync(backupDir).sort();
+      while (backups.length > 5) {
+        fs.unlinkSync(path.join(backupDir, backups.shift()));
+      }
+    }
+    fs.writeFileSync(dbPath, JSON.stringify(orders, null, 2), 'utf8');
     return true;
   } catch (e) {
     console.error('Error escribiendo base de datos:', e);
@@ -152,7 +164,41 @@ app.put('/api/orders/:num', requireAdmin, (req, res) => {
   }
 });
 
-// Sincronizar todos los pedidos (Excel import / Google Sheets sync)
+// Eliminar un pedido individual por su _num
+app.delete('/api/orders/:num', requireAdmin, (req, res) => {
+  const num = parseInt(req.params.num, 10);
+  const orders = readOrders();
+  const index = orders.findIndex(o => o._num === num);
+  if (index !== -1) {
+    orders.splice(index, 1);
+    if (writeOrders(orders)) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ error: 'Error al eliminar el pedido' });
+    }
+  } else {
+    res.status(404).json({ error: 'Pedido no encontrado' });
+  }
+});
+
+// Restaurar desde el último backup
+app.post('/api/orders/restore-backup', requireAdmin, (req, res) => {
+  const backupDir = path.join(dataDir, 'backups');
+  if (!fs.existsSync(backupDir)) return res.status(404).json({ error: 'No hay backups disponibles' });
+  const backups = fs.readdirSync(backupDir).sort();
+  if (backups.length === 0) return res.status(404).json({ error: 'No hay backups disponibles' });
+  const lastBackup = path.join(backupDir, backups[backups.length - 1]);
+  try {
+    const data = fs.readFileSync(lastBackup, 'utf8');
+    const orders = JSON.parse(data);
+    fs.writeFileSync(dbPath, JSON.stringify(orders, null, 2), 'utf8');
+    res.json({ success: true, restored: orders.length, from: backups[backups.length - 1] });
+  } catch (e) {
+    res.status(500).json({ error: 'Error al restaurar backup: ' + e.message });
+  }
+});
+
+
 app.post('/api/orders/sync', requireAdmin, (req, res) => {
   const { orders } = req.body;
   if (!Array.isArray(orders)) {
