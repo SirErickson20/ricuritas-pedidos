@@ -1307,15 +1307,34 @@
     </div>
   </div>
   
-  <div id="clientSuccess" class="client-container hidden">
-    <div class="client-success-card">
-      <div class="success-icon">🎉</div>
-      <h3>¡Pedido recibido con éxito!</h3>
-      <p>Tu pedido ha sido registrado en nuestro sistema. Guardá tu número de pedido para cualquier consulta:</p>
-      <div class="order-badge" id="successOrderNumber">N° 0</div>
-      <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 10px;">Si seleccionaste transferencia como método de pago y no subiste el comprobante aún, recordá enviarlo para confirmar tu seña. ¡Muchas gracias!</p>
-      <button class="btn-secondary" onclick="window.location.reload()" style="padding: 10px 24px; border-radius: 30px; margin-top: 15px;">Hacer otro pedido</button>
+      </div>
     </div>
+  </div>
+</div>
+
+<div id="clientSuccess" class="client-container hidden">
+  <div class="client-success-card">
+    <div class="success-icon">🎉</div>
+    <h3>¡Pedido recibido con éxito!</h3>
+    <p>Tu pedido ha sido registrado en nuestro sistema. Guardá tu número de pedido para cualquier consulta:</p>
+    <div class="order-badge" id="successOrderNumber">N° 0</div>
+    
+    <!-- Resumen del Pedido para Corroborar -->
+    <div id="successOrderDetails" style="text-align: left; margin: 20px auto; padding: 16px; background: rgba(141, 110, 99, 0.05); border-radius: 16px; border: 1px solid rgba(141, 110, 99, 0.15); font-size: 0.88rem; max-width: 500px;">
+      <h4 style="color: var(--chocolate); margin-top: 0; margin-bottom: 12px; font-family: 'Playfair Display', serif; border-bottom: 1px dashed rgba(141, 110, 99, 0.2); padding-bottom: 6px;">📋 Resumen de tu Pedido</h4>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div><strong>Comprador:</strong> <span id="summaryComprador"></span></div>
+        <div><strong>Celular:</strong> <span id="summaryCelular"></span></div>
+        <div id="summaryDestinatarioContainer"><strong>Destinatario:</strong> <span id="summaryDestinatario"></span></div>
+        <div><strong>Dirección:</strong> <span id="summaryDireccion"></span></div>
+        <div><strong>Bebida:</strong> <span id="summaryBebida"></span></div>
+        <div id="summaryMensajeContainer"><strong>Mensaje:</strong> <span id="summaryMensaje" style="font-style: italic;"></span></div>
+        <div><strong>Método de Pago:</strong> <span id="summaryPago"></span></div>
+      </div>
+    </div>
+
+    <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 10px;">Si seleccionaste transferencia como método de pago y no subiste el comprobante aún, recordá enviarlo para confirmar tu seña. ¡Muchas gracias!</p>
+    <button class="btn-secondary" onclick="window.location.reload()" style="padding: 10px 24px; border-radius: 30px; margin-top: 15px;">Hacer otro pedido</button>
   </div>
 </div>
 
@@ -1887,6 +1906,11 @@ async function fetchOrdersFromDB() {
     filterOrders();
     renderStats();
     
+    // Asegurar que la página de pedidos esté visible
+    if (currentTab === 'orders') {
+      document.getElementById('ordersPage').classList.remove('hidden');
+    }
+    
     // Si la pestaña actual es el mapa, forzar reinicio
     if (currentTab === 'map' && !mapInitialized) {
       initMap();
@@ -2033,6 +2057,33 @@ async function submitClientOrder(event) {
     
     if (orderRes.ok) {
       const createdOrder = await orderRes.json();
+      
+      // Populate summary details
+      document.getElementById('summaryComprador').textContent = orderData.nombreComprador;
+      document.getElementById('summaryCelular').textContent = orderData.celularComprador;
+      
+      const destContainer = document.getElementById('summaryDestinatarioContainer');
+      if (orderData.nombreDestinatario || orderData.celularDestinatario) {
+        destContainer.style.display = 'block';
+        document.getElementById('summaryDestinatario').textContent = `${orderData.nombreDestinatario || ''} ${orderData.celularDestinatario ? '(' + orderData.celularDestinatario + ')' : ''}`;
+      } else {
+        destContainer.style.display = 'none';
+      }
+      
+      const fullDir = [orderData.calle, orderData.numeroCalle, orderData.piso, orderData.barrio ? `(B° ${orderData.barrio})` : ''].filter(Boolean).join(' ');
+      document.getElementById('summaryDireccion').textContent = fullDir;
+      document.getElementById('summaryBebida').textContent = orderData.bebida;
+      
+      const msgContainer = document.getElementById('summaryMensajeContainer');
+      if (orderData.mensaje) {
+        msgContainer.style.display = 'block';
+        document.getElementById('summaryMensaje').textContent = `"${orderData.mensaje}"`;
+      } else {
+        msgContainer.style.display = 'none';
+      }
+      
+      document.getElementById('summaryPago').textContent = orderData.pago;
+
       document.getElementById('clientLayout').classList.add('hidden');
       document.getElementById('clientSuccess').classList.remove('hidden');
       document.getElementById('successOrderNumber').textContent = `N° ${createdOrder._num}`;
@@ -3097,14 +3148,8 @@ async function fetchAndProcessGoogleSheets(urlOrId) {
 
 function disconnectGoogleSheets() {
   localStorage.removeItem('ricuritas_sheet_url');
-  allOrders = [];
-  filteredOrders = [];
-  document.getElementById('uploadZone').style.display = 'block';
-  document.getElementById('ordersPage').classList.add('hidden');
-  document.getElementById('sheetUrlInput').value = '';
   updateSyncButtonsVisibility();
-  if (map) { map.remove(); map = null; }
-  mapInitialized = false;
+  fetchOrdersFromDB();
   showToast('🔌 Sincronización de Google Sheets desactivada');
 }
 
