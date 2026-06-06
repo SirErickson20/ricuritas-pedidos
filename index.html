@@ -1374,22 +1374,8 @@
     </div>
   </header>
 
+
   <main class="main">
-    <!-- El Admin Zone tiene su propio Upload/Sincronización como utilidad opcional en el panel -->
-    <div class="upload-section" id="uploadZone" style="margin-bottom: 24px; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px var(--shadow);">
-      <h3 style="font-family:'Playfair Display',serif; color:var(--chocolate); font-size:1.15rem; margin-bottom:8px;">Utilidades de Sincronización (Excel / Sheets)</h3>
-      <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center;">
-        <label class="btn-secondary" for="fileInput" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">📂 Importar Excel</label>
-        <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(event)" style="display:none;">
-        
-        <div style="display: flex; gap: 8px; flex: 1; min-width: 280px;">
-          <input type="text" id="sheetUrlInput" placeholder="Enlace de compartir de tu Google Sheet..." style="flex: 1; padding: 6px 12px; border: 2px solid var(--rose-light); border-radius: 20px; font-family: 'Nunito', sans-serif; font-size: 0.8rem; outline: none;">
-          <button class="btn-primary" onclick="connectGoogleSheets()" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 20px; box-shadow: none;">⚡ Sincronizar Google Sheets</button>
-        </div>
-        <button class="btn-secondary" onclick="copyAndAutofillSheetLink()" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 20px;">📋 Copiar Link</button>
-        <button class="toolbar-btn" id="disconnectToolbarBtn" onclick="disconnectGoogleSheets()" style="background: #a24d4d; border-radius: 20px; font-size:0.8rem; padding:6px 14px; display: none;">🔌 Desactivar Sheets</button>
-      </div>
-    </div>
 
   <!-- ORDERS PAGE -->
   <div class="orders-page hidden" id="ordersPage">
@@ -1410,8 +1396,6 @@
       </select>
       <div class="count-badge" id="countBadge">0 pedidos</div>
       <button class="toolbar-btn" onclick="exportToExcel()" style="margin-left: auto;">📥 Exportar Excel</button>
-      <button class="toolbar-btn" id="syncToolbarBtn" onclick="const url = localStorage.getItem('ricuritas_sheet_url'); if(url) fetchAndProcessGoogleSheets(url);" style="background: linear-gradient(135deg, var(--sage-dark), var(--chocolate)); display: none; margin-left: 8px;">🔄 Sincronizar</button>
-      <button class="toolbar-btn" id="disconnectToolbarBtn" onclick="disconnectGoogleSheets()" style="background: #a24d4d; display: none; margin-left: 8px;">🔌 Desconectar</button>
     </div>
 
     <div class="pedidos-grid" id="pedidosGrid"></div>
@@ -1703,16 +1687,18 @@ async function fetchCoords(query) {
   return null;
 }
 
-// ---- DRAG & DROP ----
+// ---- DRAG & DROP (desactivado - sin zona de upload) ----
 const zone = document.getElementById('uploadZone');
-zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-zone.addEventListener('drop', e => {
-  e.preventDefault();
-  zone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(file);
-});
+if (zone) {
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+}
 
 function handleFile(e) {
   const file = e.target.files[0];
@@ -1881,7 +1867,8 @@ async function parseRawExcelData(raw, mode = 'replace') {
   mapMarkers = [];
   if (map) { map.remove(); map = null; }
 
-  document.getElementById('uploadZone').style.display = 'none';
+  const uploadZoneEl = document.getElementById('uploadZone');
+  if (uploadZoneEl) uploadZoneEl.style.display = 'none';
   document.getElementById('ordersPage').classList.remove('hidden');
 }
 
@@ -3079,7 +3066,8 @@ function getPagoPopupTag(pagoComp, seña) {
 
 function copyAndAutofillSheetLink() {
   const link = 'https://docs.google.com/spreadsheets/d/1Ql_JtJmHVFgepdJg08n-hJji0XkxtUQojCgXSpPXM98/edit?usp=sharing';
-  document.getElementById('sheetUrlInput').value = link;
+  const sheetInputEl = document.getElementById('sheetUrlInput');
+  if (sheetInputEl) sheetInputEl.value = link;
   
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(link).then(() => {
@@ -3094,7 +3082,8 @@ function copyAndAutofillSheetLink() {
 
 // ---- GOOGLE SHEETS SINC ----
 async function connectGoogleSheets() {
-  const urlOrId = document.getElementById('sheetUrlInput').value.trim();
+  const sheetInputEl2 = document.getElementById('sheetUrlInput');
+  const urlOrId = sheetInputEl2 ? sheetInputEl2.value.trim() : '';
   if (!urlOrId) {
     showToast('⚠️ Por favor ingresá un enlace o ID de Google Sheets');
     return;
@@ -3166,25 +3155,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const isAdminRoute = window.location.pathname.startsWith('/admin');
   
   if (isAdminRoute) {
-    // Es ruta de administración
+    // Es ruta de administración — siempre pedir contraseña
     document.getElementById('clientLayout').classList.add('hidden');
     document.getElementById('clientSuccess').classList.add('hidden');
-    
-    const token = localStorage.getItem('ricuritas_admin_token');
-    if (token) {
-      document.getElementById('adminLayout').classList.remove('hidden');
-      document.getElementById('loginLayout').style.display = 'none';
-      fetchOrdersFromDB();
-    } else {
-      document.getElementById('adminLayout').classList.add('hidden');
-      document.getElementById('loginLayout').style.display = 'flex';
-    }
-    
-    const savedUrl = localStorage.getItem('ricuritas_sheet_url');
-    if (savedUrl) {
-      document.getElementById('sheetUrlInput').value = savedUrl;
-    }
-    updateSyncButtonsVisibility();
+    document.getElementById('adminLayout').classList.add('hidden');
+    // Limpiar cualquier token guardado para forzar siempre el login
+    localStorage.removeItem('ricuritas_admin_token');
+    document.getElementById('loginLayout').style.display = 'flex';
   } else {
     // Es ruta de cliente
     document.getElementById('clientLayout').classList.remove('hidden');
