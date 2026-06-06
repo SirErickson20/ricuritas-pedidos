@@ -2170,27 +2170,41 @@ function triggerLocalUpload(fieldId) {
   document.getElementById('file_' + fieldId).click();
 }
 
-function handleLocalImageUpload(input, fieldId) {
+async function handleLocalImageUpload(input, fieldId) {
   const files = input.files;
   if (!files || files.length === 0) return;
-  
-  let loadedCount = 0;
-  const newBase64s = [];
-  
+
+  // Determinar si es foto o comprobante
+  const fileType = fieldId.toLowerCase().includes('comprobante') ? 'comprobante' : 'foto';
+
+  showToast('⏳ Subiendo imagen...');
+
+  const formData = new FormData();
   for (let i = 0; i < files.length; i++) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      newBase64s.push(reader.result);
-      loadedCount++;
-      if (loadedCount === files.length) {
-        const currentVal = document.getElementById(fieldId).value;
-        const newVal = currentVal ? currentVal + ', ' + newBase64s.join(', ') : newBase64s.join(', ');
-        document.getElementById(fieldId).value = newVal;
-        updateFieldPreview(fieldId, newVal);
-        input.value = ''; // Limpiar el input de tipo file
-      }
-    };
-    reader.readAsDataURL(files[i]);
+    formData.append(fileType, files[i]);
+  }
+
+  try {
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) throw new Error('Error del servidor al subir imagen');
+    const data = await res.json();
+
+    // El servidor devuelve { foto: '/uploads/xxx, /uploads/yyy' } o { comprobante: '/uploads/xxx' }
+    const uploadedUrls = data[fileType] || '';
+
+    const currentVal = document.getElementById(fieldId).value.trim();
+    const newVal = currentVal ? currentVal + ', ' + uploadedUrls : uploadedUrls;
+    document.getElementById(fieldId).value = newVal;
+    updateFieldPreview(fieldId, newVal);
+    input.value = '';
+    showToast('✅ Imagen subida correctamente');
+  } catch (err) {
+    console.error('Error subiendo imagen:', err);
+    showToast('❌ No se pudo subir la imagen. Verificá que el servidor esté activo.');
+    input.value = '';
   }
 }
 
