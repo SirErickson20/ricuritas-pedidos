@@ -2481,12 +2481,32 @@ function renderStats() {
   const conMensaje = allOrders.filter(o => o.mensaje).length;
   const barrios = [...new Set(allOrders.map(o => o.barrio).filter(Boolean))].length;
 
+  // Totales de dinero
+  function parseMoney(val) {
+    if (!val) return 0;
+    const s = String(val).trim();
+    if (s.toLowerCase() === 'no' || s.toLowerCase() === 'si' || s.toLowerCase() === 'sí') return 0;
+    const n = parseInt(s.replace(/[^0-9]/g, ''), 10);
+    return isNaN(n) ? 0 : n;
+  }
+  const totalSeña = allOrders.reduce((sum, o) => sum + parseMoney(o.seña), 0);
+  const totalResta = allOrders.reduce((sum, o) => {
+    const pComp = String(o.pagoCompleto || '').trim().toLowerCase();
+    // Si ya pagó completo, resta = 0
+    if (['sí','si','completo','total','pago completo'].includes(pComp)) return sum;
+    return sum + parseMoney(o.pagoCompleto);
+  }, 0);
+  const fmt = (n) => n.toLocaleString('es-AR');
+
   document.getElementById('statsCards').innerHTML = `
     <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value">${total}</div><div class="stat-label">Pedidos Totales</div></div>
     <div class="stat-card"><div class="stat-icon">🖼️</div><div class="stat-value">${conFoto}</div><div class="stat-label">Con foto personalizada</div></div>
     <div class="stat-card"><div class="stat-icon">💌</div><div class="stat-value">${conMensaje}</div><div class="stat-label">Con mensaje</div></div>
     <div class="stat-card"><div class="stat-icon">🏘️</div><div class="stat-value">${barrios}</div><div class="stat-label">Barrios distintos</div></div>
+    <div class="stat-card" style="border-top: 4px solid #A8C5A0;"><div class="stat-icon">💰</div><div class="stat-value" style="color:#2d6a4f; font-size:1.4rem;">$${fmt(totalSeña)}</div><div class="stat-label">Total Cobrado (Señas)</div></div>
+    <div class="stat-card" style="border-top: 4px solid #E8A4A4;"><div class="stat-icon">⏳</div><div class="stat-value" style="color:#9B5E4A; font-size:1.4rem;">$${fmt(totalResta)}</div><div class="stat-label">Total Pendiente (Restos)</div></div>
   `;
+
 
   // Pago donut
   const pagoCount = {};
