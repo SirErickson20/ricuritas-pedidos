@@ -1284,9 +1284,26 @@ function parseRawExcelData(raw) {
       else recipientPhoneIdx = idx;
     } else if (norm.includes('barrio')) {
       barrioIdx = idx;
-    } else if (norm.includes('calle') && !norm.includes('número') && !norm.includes('numero')) {
+    } else if (
+      norm.includes('calle') && 
+      !norm.includes('número') && 
+      !norm.includes('numero') && 
+      !norm.includes('nro') && 
+      !norm.includes('casa') && 
+      !norm.includes('altura')
+    ) {
       calleIdx = idx;
-    } else if (norm.includes('número de calle') || norm.includes('numero de calle') || (norm.includes('número') && norm.includes('calle'))) {
+    } else if (
+      norm.includes('número de calle') || 
+      norm.includes('numero de calle') || 
+      norm.includes('número de casa') || 
+      norm.includes('numero de casa') || 
+      norm.includes('nro de calle') || 
+      norm.includes('nro de casa') ||
+      norm.includes('altura') || 
+      (norm.includes('número') && (norm.includes('calle') || norm.includes('casa') || norm.includes('nro'))) ||
+      norm === 'número' || norm === 'numero' || norm === 'nro' || norm === 'altura'
+    ) {
       numeroCalleIdx = idx;
     } else if (norm.includes('piso') || norm.includes('depto') || norm.includes('departamento')) {
       pisoIdx = idx;
