@@ -1530,7 +1530,7 @@
             <label for="editFotos">URL Foto Personalizada</label>
             <div class="input-with-upload">
               <input type="text" id="editFotos" placeholder="URL de Google Drive o base64" oninput="updateFieldPreview('editFotos', this.value)">
-              <button type="button" class="upload-btn-icon" onclick="triggerLocalUpload('editFotos')" title="Subir archivo local">📁</button>
+              <label for="file_editFotos" class="upload-btn-icon" title="Subir foto">📁</label>
             </div>
             <input type="file" id="file_editFotos" accept="image/*" style="display:none;" onchange="handleLocalImageUpload(this, 'editFotos')" multiple>
             <div id="preview_editFotos" class="image-field-preview"></div>
@@ -1555,7 +1555,7 @@
             <label for="editComprobante">URL Comprobante</label>
             <div class="input-with-upload">
               <input type="text" id="editComprobante" placeholder="URL de Google Drive o base64" oninput="updateFieldPreview('editComprobante', this.value)">
-              <button type="button" class="upload-btn-icon" onclick="triggerLocalUpload('editComprobante')" title="Subir archivo local">📁</button>
+              <label for="file_editComprobante" class="upload-btn-icon" title="Subir comprobante">📁</label>
             </div>
             <input type="file" id="file_editComprobante" accept="image/*" style="display:none;" onchange="handleLocalImageUpload(this, 'editComprobante')">
             <div id="preview_editComprobante" class="image-field-preview"></div>
