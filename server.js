@@ -37,10 +37,21 @@ const cloudStorage = new CloudinaryStorage({
 });
 const upload = multer({ storage: cloudStorage });
 
-// ── MongoDB (singleton lazy) ───────────────────────────────
+// ── MongoDB (serverless-safe) ──────────────────────────────
 let mongoClient = null;
 
 async function getCollection() {
+  // Si hay cliente, verificar que la conexión sigue viva
+  if (mongoClient) {
+    try {
+      await mongoClient.db('admin').command({ ping: 1 });
+    } catch (e) {
+      // Conexión muerta → resetear y reconectar
+      try { await mongoClient.close(); } catch (_) {}
+      mongoClient = null;
+    }
+  }
+
   if (!mongoClient) {
     mongoClient = new MongoClient(process.env.MONGODB_URI, {
       serverApi: {
@@ -48,9 +59,13 @@ async function getCollection() {
         strict: true,
         deprecationErrors: true,
       },
+      maxPoolSize: 1,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
     });
     await mongoClient.connect();
   }
+
   return mongoClient.db('ricuritas').collection('orders');
 }
 
