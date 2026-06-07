@@ -2003,24 +2003,17 @@ async function submitClientOrder(event) {
     let uploadedPaths = { foto: '', comprobante: '' };
     
     if (fotoFiles.length > 0 || comprobanteFile) {
-      const formData = new FormData();
+      // Subir directamente a Cloudinary desde el navegador (sin pasar por Vercel)
       if (fotoFiles.length > 0) {
+        const fotoUrls = [];
         for (let i = 0; i < fotoFiles.length; i++) {
-          formData.append('foto', fotoFiles[i]);
+          const url = await uploadFileToCloudinary(fotoFiles[i]);
+          fotoUrls.push(url);
         }
+        uploadedPaths.foto = fotoUrls.join(', ');
       }
-      if (comprobanteFile) formData.append('comprobante', comprobanteFile);
-      
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-      if (uploadRes.ok) {
-        const paths = await uploadRes.json();
-        uploadedPaths.foto = paths.foto || '';
-        uploadedPaths.comprobante = paths.comprobante || '';
-      } else {
-        throw new Error('Error al subir archivos');
+      if (comprobanteFile) {
+        uploadedPaths.comprobante = await uploadFileToCloudinary(comprobanteFile);
       }
     }
     
@@ -2172,6 +2165,24 @@ function closeLightbox() {
   setTimeout(() => { lightbox.style.display = 'none'; }, 300);
 }
 
+// ── Cloudinary Direct Upload (sin pasar por el servidor) ───
+const CLOUDINARY_CLOUD = 'dmz4wji4z';
+const CLOUDINARY_PRESET = 'ricuritas_upload';
+
+async function uploadFileToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUDINARY_PRESET);
+  fd.append('folder', 'ricuritas');
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+    method: 'POST',
+    body: fd
+  });
+  if (!res.ok) throw new Error('Error al subir a Cloudinary');
+  const data = await res.json();
+  return data.secure_url;
+}
+
 // Carga e Importación de Imagen Local en Modal de Edición
 function triggerLocalUpload(fieldId) {
   document.getElementById('file_' + fieldId).click();
@@ -2181,27 +2192,16 @@ async function handleLocalImageUpload(input, fieldId) {
   const files = input.files;
   if (!files || files.length === 0) return;
 
-  // Determinar si es foto o comprobante
-  const fileType = fieldId.toLowerCase().includes('comprobante') ? 'comprobante' : 'foto';
-
   showToast('⏳ Subiendo imagen...');
 
-  const formData = new FormData();
-  for (let i = 0; i < files.length; i++) {
-    formData.append(fileType, files[i]);
-  }
-
   try {
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    });
-    if (!res.ok) throw new Error('Error del servidor al subir imagen');
-    const data = await res.json();
+    const urls = [];
+    for (let i = 0; i < files.length; i++) {
+      const url = await uploadFileToCloudinary(files[i]);
+      urls.push(url);
+    }
 
-    // El servidor devuelve { foto: '/uploads/xxx, /uploads/yyy' } o { comprobante: '/uploads/xxx' }
-    const uploadedUrls = data[fileType] || '';
-
+    const uploadedUrls = urls.join(', ');
     const currentVal = document.getElementById(fieldId).value.trim();
     const newVal = currentVal ? currentVal + ', ' + uploadedUrls : uploadedUrls;
     document.getElementById(fieldId).value = newVal;
@@ -2210,7 +2210,7 @@ async function handleLocalImageUpload(input, fieldId) {
     showToast('✅ Imagen subida correctamente');
   } catch (err) {
     console.error('Error subiendo imagen:', err);
-    showToast('❌ No se pudo subir la imagen. Verificá que el servidor esté activo.');
+    showToast('❌ No se pudo subir la imagen.');
     input.value = '';
   }
 }
