@@ -24,3 +24,7 @@ uploads/*
 
 # Backups de base de datos
 data/backups/
+
+# Variables de entorno (credenciales - nunca subir a GitHub)
+.env
+.env.local
