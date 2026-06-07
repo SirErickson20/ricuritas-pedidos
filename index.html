@@ -878,6 +878,9 @@
   .btn-secondary:hover {
     background: var(--rose-light);
   }
+  @media (hover: none) {
+    .btn-secondary:hover { background: transparent; }
+  }
   .btn-primary {
     padding: 10px 24px;
     background: linear-gradient(135deg, var(--rose-dark), var(--chocolate));
@@ -893,6 +896,12 @@
   .btn-primary:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 15px var(--shadow);
+  }
+  @media (hover: none) {
+    .btn-primary:hover { transform: none; box-shadow: 0 4px 10px var(--shadow); }
+  }
+  button, a, label[for] {
+    touch-action: manipulation;
   }
 
   /* ---- NUEVOS ESTILOS PARA IMÁGENES Y SUBIDA ---- */
@@ -920,6 +929,9 @@
   .upload-btn-icon:hover {
     background: var(--rose-light);
     transform: scale(1.05);
+  }
+  @media (hover: none) {
+    .upload-btn-icon:hover { background: var(--blush); transform: none; }
   }
   .image-field-preview {
     margin-top: 8px;
@@ -2437,7 +2449,7 @@ function renderOrders() {
         <span class="card-num">N° ${o._num}</span>
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="card-date">${formatDate(fecha)}</span>
-          <button onclick="openEditModal(${idx})" title="Editar pedido" style="background:var(--blush); border:none; cursor:pointer; font-size:0.75rem; color:var(--chocolate); font-weight:700; padding: 4px 8px; border-radius:10px; display:flex; align-items:center; gap:4px; transition:all 0.2s; user-select:none;">✏️ Editar</button>
+          <button onclick="openEditModal(${idx})" title="Editar pedido" style="background:var(--blush); border:none; cursor:pointer; font-size:0.75rem; color:var(--chocolate); font-weight:700; padding: 4px 8px; border-radius:10px; display:flex; align-items:center; gap:4px; transition:all 0.2s; user-select:none; touch-action:manipulation;">✏️ Editar</button>
         </div>
       </div>
       <div class="card-name">${nombre1 || '—'}</div>
